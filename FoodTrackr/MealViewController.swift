@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  MealViewController.swift
 //  FoodTrackr
 //
 //  Created by Brian Macheski on 10/6/15.
@@ -8,18 +8,31 @@
 
 import UIKit
 
-class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate{
+class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate{
     // MARK: Properties
     @IBOutlet weak var nameTextField: UITextField!
-    @IBOutlet weak var mealNameLabel: UILabel!
     @IBOutlet weak var photoImageView: UIImageView!
     @IBOutlet weak var ratingControl: RatingControl!
+    @IBOutlet weak var saveButton: UIBarButtonItem!
+    
+    var meal: Meal?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Handle the text field's user input through delegate callbacks
         nameTextField.delegate = self
+        
+        // Set up view if editing an existing Meal
+        if let meal = meal {
+            navigationItem.title = meal.name
+            nameTextField.text   = meal.name
+            photoImageView.image = meal.photo
+            ratingControl.rating = meal.rating
+        }
+        
+        // Enable save button only if the text field has a valid Meal name
+        checkValidMealName()
     }
 
     override func didReceiveMemoryWarning() {
@@ -28,6 +41,18 @@ class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerContro
     }
     
     // MARK: UITextFieldDelegate
+    func textFieldDidBeginEditing(textField: UITextField) {
+        // Disable the save button while editting
+        saveButton.enabled = false
+    }
+    
+    func checkValidMealName() {
+        // Disable the save button if text field is empty
+        let text = nameTextField.text ?? ""
+        saveButton.enabled = !text.isEmpty
+
+    }
+    
     func textFieldShouldReturn(textField: UITextField) -> Bool {
         // Hide the keyboard
         textField.resignFirstResponder()
@@ -35,7 +60,8 @@ class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerContro
     }
     
     func textFieldDidEndEditing(textField: UITextField) {
-        mealNameLabel.text = textField.text
+        checkValidMealName()
+        navigationItem.title = textField.text
     }
     
     // Mark: UIImagePickerControllerDelegate
@@ -56,6 +82,29 @@ class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerContro
         
     // Dismiss the picker
     dismissViewControllerAnimated(true, completion: nil)
+    }
+    // MARK: Navigation
+    
+    @IBAction func cancel(sender: UIBarButtonItem) {
+        let isPresentingInAddMealMode = presentingViewController is UINavigationController
+        if isPresentingInAddMealMode {
+            dismissViewControllerAnimated(true, completion: nil)
+        }
+        else {
+            navigationController!.popViewControllerAnimated(true)
+        }
+    }
+    
+    // This method lets you configure a view controller before its presented
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        if saveButton === sender {
+            let name = nameTextField.text ?? ""
+            let photo = photoImageView.image
+            let rating = ratingControl.rating
+            
+            // Set the meal to be passed to MealTableViewController after the unwind segue
+            meal = Meal(name: name, photo: photo, rating: rating)
+        }
     }
     
     // MARK: Actions
